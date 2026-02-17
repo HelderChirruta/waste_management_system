@@ -130,16 +130,16 @@
     <!-- Gráficos e Estatísticas -->
     <div class="row g-4 mb-4">
         <div class="col-xl-8">
-            <div class="card h-100">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                     <h5 class="mb-0">
                         <i class="fas fa-chart-line text-primary me-2"></i>
                         Entradas nos Últimos 30 Dias
                     </h5>
                     <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-sm btn-outline-secondary active">Diário</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary">Semanal</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary">Mensal</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary active" onclick="mudarPeriodo('dia')">Diário</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="mudarPeriodo('semana')">Semanal</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="mudarPeriodo('mes')">Mensal</button>
                     </div>
                 </div>
                 <div class="card-body">
@@ -152,7 +152,7 @@
                     @endphp
 
                     @if($entradasPorDia->count() > 0)
-                        <canvas id="graficoEntradas" style="height: 300px;"></canvas>
+                        <canvas id="graficoEntradas" style="height: 350px; width: 100%;"></canvas>
                     @else
                         <div class="text-center py-5">
                             <i class="fas fa-chart-line fa-4x text-muted mb-3"></i>
@@ -164,8 +164,8 @@
         </div>
 
         <div class="col-xl-4">
-            <div class="card h-100">
-                <div class="card-header bg-white">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
                     <h5 class="mb-0">
                         <i class="fas fa-chart-pie text-primary me-2"></i>
                         Distribuição por Categoria
@@ -177,23 +177,56 @@
                             ->selectRaw('categoria_id, COUNT(*) as total, SUM(quantidade) as kg')
                             ->groupBy('categoria_id')
                             ->get();
+                        
+                        // Cores vibrantes para cada categoria
+                        $coresCirculares = [
+                            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFE194',
+                            '#B19CD9', '#FF9999', '#6C5B7B', '#F08A5D', '#B83B5E',
+                            '#2F9292', '#E98580', '#6A2C70', '#11999E', '#DD7631'
+                        ];
                     @endphp
 
                     @if($distribuicao->count() > 0)
-                        <canvas id="graficoPizza" style="height: 250px;"></canvas>
+                        <div class="chart-container" style="position: relative; height: 250px;">
+                            <canvas id="graficoPizza"></canvas>
+                        </div>
+                        
+                        <!-- Legenda colorida com percentuais -->
                         <div class="mt-4">
-                            @foreach($distribuicao as $item)
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <div>
-                                        <span class="badge" style="background-color: {{ '#' . substr(md5($item->categoria->nome ?? ''), 0, 6) }}; width: 12px; height: 12px; display: inline-block; border-radius: 50%;"></span>
-                                        <span class="ms-2">{{ $item->categoria->nome ?? 'Sem categoria' }}</span>
+                            @php
+                                $totalGeral = $distribuicao->sum('kg');
+                            @endphp
+                            @foreach($distribuicao as $index => $item)
+                                @php
+                                    $percentual = $totalGeral > 0 ? ($item->kg / $totalGeral) * 100 : 0;
+                                    $cor = $coresCirculares[$index % count($coresCirculares)];
+                                @endphp
+                                <div class="d-flex justify-content-between align-items-center mb-3 p-2 rounded" style="background-color: {{ $cor }}10; border-left: 4px solid {{ $cor }};">
+                                    <div class="d-flex align-items-center">
+                                        <span style="display: inline-block; width: 12px; height: 12px; background-color: {{ $cor }}; border-radius: 50%; margin-right: 10px;"></span>
+                                        <div>
+                                            <span class="fw-semibold">{{ $item->categoria->nome ?? 'Sem categoria' }}</span>
+                                            <small class="text-muted d-block">{{ $item->total }} entradas</small>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <strong>{{ number_format($item->kg, 0) }} kg</strong>
-                                        <span class="text-muted ms-2">({{ $item->total }} entradas)</span>
+                                    <div class="text-end">
+                                        <strong style="color: {{ $cor }};">{{ number_format($item->kg, 0) }} kg</strong>
+                                        <span class="badge ms-2" style="background-color: {{ $cor }}20; color: {{ $cor }};">{{ number_format($percentual, 1) }}%</span>
                                     </div>
                                 </div>
                             @endforeach
+                        </div>
+
+                        <!-- Card de resumo -->
+                        <div class="mt-3 p-3 bg-light rounded">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Total de categorias:</span>
+                                <strong>{{ $distribuicao->count() }}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mt-2">
+                                <span class="text-muted">Total processado:</span>
+                                <strong>{{ number_format($totalGeral, 0) }} kg</strong>
+                            </div>
                         </div>
                     @else
                         <div class="text-center py-4">
@@ -209,8 +242,8 @@
     <!-- Tabelas de Atividades Recentes -->
     <div class="row g-4">
         <div class="col-xl-6">
-            <div class="card">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                     <h5 class="mb-0">
                         <i class="fas fa-clock text-primary me-2"></i>
                         Últimas Entradas
@@ -224,10 +257,10 @@
                         <table class="table table-hover align-middle mb-0">
                             <thead class="bg-light">
                                 <tr>
-                                    <th>Lote</th>
-                                    <th>Data/Hora</th>
-                                    <th>Categoria</th>
-                                    <th>Quantidade</th>
+                                    <th class="py-3">Lote</th>
+                                    <th class="py-3">Data/Hora</th>
+                                    <th class="py-3">Categoria</th>
+                                    <th class="py-3">Quantidade</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -235,6 +268,7 @@
                                 <tr>
                                     <td>
                                         <span class="badge bg-info bg-opacity-10 text-info px-3 py-2">
+                                            <i class="fas fa-qrcode me-1"></i>
                                             {{ $entrada->codigo_lote }}
                                         </span>
                                     </td>
@@ -242,7 +276,11 @@
                                         <div>{{ $entrada->data_hora_entrada->format('d/m/Y') }}</div>
                                         <small class="text-muted">{{ $entrada->data_hora_entrada->format('H:i') }}</small>
                                     </td>
-                                    <td>{{ $entrada->categoria->nome ?? 'N/A' }}</td>
+                                    <td>
+                                        <span class="badge" style="background-color: {{ $coresCirculares[$loop->index % count($coresCirculares)] }}20; color: {{ $coresCirculares[$loop->index % count($coresCirculares)] }};">
+                                            {{ $entrada->categoria->nome ?? 'N/A' }}
+                                        </span>
+                                    </td>
                                     <td>
                                         <strong>{{ number_format($entrada->quantidade, 2) }}</strong>
                                         <small class="text-muted">{{ $entrada->unidade_medida }}</small>
@@ -257,8 +295,8 @@
         </div>
 
         <div class="col-xl-6">
-            <div class="card">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                     <h5 class="mb-0">
                         <i class="fas fa-arrows-spin text-primary me-2"></i>
                         Últimas Movimentações
@@ -272,10 +310,10 @@
                         <table class="table table-hover align-middle mb-0">
                             <thead class="bg-light">
                                 <tr>
-                                    <th>Lote</th>
-                                    <th>Tipo</th>
-                                    <th>Quantidade</th>
-                                    <th>Data</th>
+                                    <th class="py-3">Lote</th>
+                                    <th class="py-3">Tipo</th>
+                                    <th class="py-3">Quantidade</th>
+                                    <th class="py-3">Data</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -283,6 +321,7 @@
                                 <tr>
                                     <td>
                                         <span class="badge bg-info bg-opacity-10 text-info px-3 py-2">
+                                            <i class="fas fa-qrcode me-1"></i>
                                             {{ $mov->entrada->codigo_lote ?? 'N/A' }}
                                         </span>
                                     </td>
@@ -294,8 +333,21 @@
                                                 'venda' => 'bg-success',
                                                 'descarte' => 'bg-danger'
                                             ];
+                                            $tipoCores = [
+                                                'separacao' => '#4e73df',
+                                                'armazenamento' => '#36b9cc',
+                                                'venda' => '#1cc88a',
+                                                'descarte' => '#e74a3b'
+                                            ];
                                         @endphp
-                                        <span class="badge {{ $tipoClasses[$mov->tipo_movimentacao] ?? 'bg-secondary' }} px-3 py-2">
+                                        <span class="badge" style="background-color: {{ $tipoCores[$mov->tipo_movimentacao] ?? '#858796' }}20; color: {{ $tipoCores[$mov->tipo_movimentacao] ?? '#858796' }}; padding: 8px 12px;">
+                                            <i class="fas 
+                                                @if($mov->tipo_movimentacao == 'separacao') fa-code-branch
+                                                @elseif($mov->tipo_movimentacao == 'armazenamento') fa-warehouse
+                                                @elseif($mov->tipo_movimentacao == 'venda') fa-tags
+                                                @elseif($mov->tipo_movimentacao == 'descarte') fa-trash
+                                                @endif me-1">
+                                            </i>
                                             {{ ucfirst($mov->tipo_movimentacao) }}
                                         </span>
                                     </td>
@@ -317,21 +369,30 @@
     <!-- Informações do Sistema -->
     <div class="row mt-4">
         <div class="col-12">
-            <div class="card bg-light border-0">
+            <div class="card bg-gradient-light border-0 shadow-sm">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="flex-shrink-0">
-                            <i class="fas fa-circle-info fa-3x text-primary opacity-50"></i>
+                            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-circle-info fa-3x text-white opacity-75"></i>
+                            </div>
                         </div>
                         <div class="flex-grow-1 ms-3">
                             <h5 class="mb-2">Bem-vindo, {{ Auth::user()->nome_completo }}!</h5>
-                            <p class="text-muted mb-0">
-                                <i class="fas fa-user-tag me-2"></i>Perfil: <strong>{{ Auth::user()->role->nome ?? 'Não definido' }}</strong>
-                                <span class="mx-3">|</span>
-                                <i class="fas fa-envelope me-2"></i>{{ Auth::user()->email }}
-                                <span class="mx-3">|</span>
-                                <i class="fas fa-calendar-check me-2"></i>Membro desde: {{ Auth::user()->created_at->format('d/m/Y') }}
-                            </p>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <p class="mb-1"><i class="fas fa-user-tag text-primary me-2"></i>Perfil: <strong>{{ Auth::user()->role->nome ?? 'Não definido' }}</strong></p>
+                                </div>
+                                <div class="col-md-4">
+                                    <p class="mb-1"><i class="fas fa-envelope text-success me-2"></i>{{ Auth::user()->email }}</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <p class="mb-1"><i class="fas fa-calendar-check text-info me-2"></i>Membro desde: {{ Auth::user()->created_at->format('d/m/Y') }}</p>
+                                </div>
+                                <div class="col-md-2">
+                                    <p class="mb-1"><i class="fas fa-clock text-warning me-2"></i>Último acesso: hoje</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -394,6 +455,10 @@
     background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
 }
 
+.bg-gradient-light {
+    background: linear-gradient(135deg, #f8f9fc 0%, #ffffff 100%);
+}
+
 /* Cards */
 .card {
     border: none;
@@ -423,6 +488,12 @@
     vertical-align: middle;
 }
 
+/* Chart container */
+.chart-container {
+    position: relative;
+    margin: auto;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .stat-value {
@@ -435,9 +506,22 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Cores vibrantes para os gráficos
+    const cores = [
+        '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFE194',
+        '#B19CD9', '#FF9999', '#6C5B7B', '#F08A5D', '#B83B5E',
+        '#2F9292', '#E98580', '#6A2C70', '#11999E', '#DD7631'
+    ];
+
     @if($entradasPorDia->count() > 0)
     // Gráfico de Linha - Entradas por Dia
     const ctx = document.getElementById('graficoEntradas').getContext('2d');
+    
+    // Criar gradiente para o fundo
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(78, 115, 223, 0.3)');
+    gradient.addColorStop(1, 'rgba(78, 115, 223, 0)');
+    
     new Chart(ctx, {
         type: 'line',
         data: {
@@ -446,16 +530,20 @@ document.addEventListener('DOMContentLoaded', function() {
             })) !!},
             datasets: [{
                 label: 'Quantidade (kg)',
-                data: {!! json_encode($entradasPorDia->pluck('kg')) !!},
-                borderColor: 'rgb(78, 115, 223)',
-                backgroundColor: 'rgba(78, 115, 223, 0.05)',
-                tension: 0.4,
-                fill: true,
-                pointBackgroundColor: 'rgb(78, 115, 223)',
+                data: {!! json_encode($entradasPorDia->pluck('kg')->map(function($v) { return floatval($v); })) !!},
+                borderColor: '#4e73df',
+                backgroundColor: gradient,
+                borderWidth: 3,
+                pointBackgroundColor: '#4e73df',
                 pointBorderColor: 'white',
                 pointBorderWidth: 2,
                 pointRadius: 4,
-                pointHoverRadius: 6
+                pointHoverRadius: 8,
+                pointHoverBackgroundColor: '#4e73df',
+                pointHoverBorderColor: 'white',
+                pointHoverBorderWidth: 3,
+                tension: 0.3,
+                fill: true
             }]
         },
         options: {
@@ -464,6 +552,20 @@ document.addEventListener('DOMContentLoaded', function() {
             plugins: {
                 legend: {
                     display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: '#4e73df',
+                    borderWidth: 2,
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            return context.raw.toFixed(2) + ' kg';
+                        }
+                    }
                 }
             },
             scales: {
@@ -471,12 +573,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     beginAtZero: true,
                     grid: {
                         drawBorder: false,
-                        color: 'rgba(0,0,0,0.05)'
+                        color: 'rgba(0,0,0,0.05)',
+                        borderDash: [5,5]
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value.toFixed(0) + ' kg';
+                        }
                     }
                 },
                 x: {
                     grid: {
                         display: false
+                    },
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 45
                     }
                 }
             }
@@ -487,20 +599,29 @@ document.addEventListener('DOMContentLoaded', function() {
     @if($distribuicao->count() > 0)
     // Gráfico de Pizza - Distribuição por Categoria
     const ctx2 = document.getElementById('graficoPizza').getContext('2d');
+    
+    // Preparar dados
+    const labels = {!! json_encode($distribuicao->pluck('categoria.nome')->map(function($nome) {
+        return $nome ?? 'Sem categoria';
+    })) !!};
+    
+    const dados = {!! json_encode($distribuicao->pluck('kg')->map(function($v) { return floatval($v); })) !!};
+    
+    // Selecionar cores baseadas no número de categorias
+    const coresGrafico = cores.slice(0, dados.length);
+    
     new Chart(ctx2, {
         type: 'doughnut',
         data: {
-            labels: {!! json_encode($distribuicao->pluck('categoria.nome')) !!},
+            labels: labels,
             datasets: [{
-                data: {!! json_encode($distribuicao->pluck('kg')) !!},
-                backgroundColor: [
-                    'rgba(78, 115, 223, 0.8)',
-                    'rgba(28, 200, 138, 0.8)',
-                    'rgba(246, 194, 62, 0.8)',
-                    'rgba(231, 74, 59, 0.8)',
-                    'rgba(97, 89, 232, 0.8)'
-                ],
-                borderWidth: 0
+                data: dados,
+                backgroundColor: coresGrafico,
+                borderColor: 'white',
+                borderWidth: 3,
+                hoverOffset: 15,
+                hoverBorderColor: 'white',
+                hoverBorderWidth: 4
             }]
         },
         options: {
@@ -509,12 +630,45 @@ document.addEventListener('DOMContentLoaded', function() {
             plugins: {
                 legend: {
                     display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: '#4e73df',
+                    borderWidth: 2,
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            let total = dados.reduce((a, b) => a + b, 0);
+                            let percentual = ((context.raw / total) * 100).toFixed(1);
+                            return context.raw.toFixed(2) + ' kg (' + percentual + '%)';
+                        }
+                    }
                 }
             },
-            cutout: '60%'
+            cutout: '65%',
+            animation: {
+                animateScale: true,
+                animateRotate: true
+            }
         }
     });
     @endif
+});
+
+// Função para mudar período do gráfico (placeholder)
+function mudarPeriodo(periodo) {
+    alert('Funcionalidade de período em desenvolvimento: ' + periodo);
+}
+
+// Atualizar botões ativos
+document.querySelectorAll('.btn-group .btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.btn-group .btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+    });
 });
 </script>
 @endpush
