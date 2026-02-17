@@ -676,6 +676,109 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Modal de Confirmação Moderno */
+        .modal-confirm {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-confirm.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-confirm-content {
+            background: white;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 450px;
+            padding: 30px;
+            text-align: center;
+            transform: scale(0.8);
+            transition: all 0.3s;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-confirm.show .modal-confirm-content {
+            transform: scale(1);
+        }
+
+        .modal-confirm-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            color: #dc3545;
+            font-size: 40px;
+        }
+
+        .modal-confirm-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .modal-confirm-message {
+            color: #6c757d;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .modal-confirm-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .modal-confirm-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 120px;
+        }
+
+        .modal-confirm-btn.cancel {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .modal-confirm-btn.cancel:hover {
+            background: #dee2e6;
+            transform: translateY(-2px);
+        }
+
+        .modal-confirm-btn.confirm {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3);
+        }
+
+        .modal-confirm-btn.confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(220, 53, 69, 0.4);
+        }
+
         /* Responsive Design */
         @media (max-width: 992px) {
             :root {
@@ -783,6 +886,28 @@
         <div class="loading-spinner"></div>
     </div>
 
+    <!-- Modal de Confirmação de Logout -->
+    <div class="modal-confirm" id="logoutModal">
+        <div class="modal-confirm-content">
+            <div class="modal-confirm-icon">
+                <i class="fas fa-sign-out-alt"></i>
+            </div>
+            <h3 class="modal-confirm-title">Sair do Sistema</h3>
+            <p class="modal-confirm-message">
+                Tem certeza que deseja sair?<br>
+                Você precisará fazer login novamente para acessar o sistema.
+            </p>
+            <div class="modal-confirm-buttons">
+                <button class="modal-confirm-btn cancel" id="cancelLogout">
+                    <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+                <button class="modal-confirm-btn confirm" id="confirmLogout">
+                    <i class="fas fa-check me-2"></i>Sair
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <!-- Sidebar Toggle Button (Desktop) -->
@@ -864,13 +989,13 @@
             </li>
         </ul>
 
-        <form method="POST" action="{{ route('logout') }}" class="mt-auto">
-            @csrf
-            <button type="submit" class="logout-btn" id="logoutBtn">
+        <!-- Botão de Logout com modal -->
+        <div class="mt-auto">
+            <button type="button" class="logout-btn" id="showLogoutModal">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Sair do Sistema</span>
             </button>
-        </form>
+        </div>
     </div>
 
     <!-- Main Content -->
@@ -946,13 +1071,12 @@
                             <span>Ajuda & Suporte</span>
                         </a>
 
-                        <form method="POST" action="{{ route('logout') }}" class="d-inline w-100">
-                            @csrf
-                            <button type="submit" class="dropdown-item w-100" style="border: none; background: none;">
-                                <i class="fas fa-sign-out-alt"></i>
-                                <span>Sair</span>
-                            </button>
-                        </form>
+                        <div class="dropdown-divider"></div>
+
+                        <button type="button" class="dropdown-item w-100" onclick="showLogoutModal()" style="border: none; background: none;">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Sair</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1002,6 +1126,11 @@
     <!-- Backdrop for mobile sidebar -->
     <div class="sidebar-backdrop" id="sidebarBackdrop" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999;"></div>
 
+    <!-- Formulário de logout escondido -->
+    <form method="POST" action="{{ route('logout') }}" id="logoutForm" style="display: none;">
+        @csrf
+    </form>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
@@ -1013,6 +1142,13 @@
             const mobileMenuBtn = document.getElementById('mobileMenuBtn');
             const sidebarBackdrop = document.getElementById('sidebarBackdrop');
             const loadingOverlay = document.getElementById('loadingOverlay');
+            
+            // Modal de logout
+            const logoutModal = document.getElementById('logoutModal');
+            const showLogoutBtn = document.getElementById('showLogoutModal');
+            const cancelLogoutBtn = document.getElementById('cancelLogout');
+            const confirmLogoutBtn = document.getElementById('confirmLogout');
+            const logoutForm = document.getElementById('logoutForm');
             
             // Estado da sidebar (salvo no localStorage)
             const sidebarState = localStorage.getItem('sidebarCollapsed') === 'true';
@@ -1067,17 +1203,41 @@
                 });
             }, 5000);
 
-            // Logout confirmation
-            const logoutBtn = document.getElementById('logoutBtn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', function(e) {
-                    if (!confirm('Tem certeza que deseja sair do sistema?')) {
-                        e.preventDefault();
-                    }
+            // Mostrar modal de logout
+            if (showLogoutBtn) {
+                showLogoutBtn.addEventListener('click', showLogoutModal);
+            }
+
+            // Cancelar logout
+            if (cancelLogoutBtn) {
+                cancelLogoutBtn.addEventListener('click', hideLogoutModal);
+            }
+
+            // Confirmar logout
+            if (confirmLogoutBtn) {
+                confirmLogoutBtn.addEventListener('click', function() {
+                    showLoading(true);
+                    setTimeout(() => {
+                        logoutForm.submit();
+                    }, 500);
                 });
             }
 
-            // Loading overlay demo (remove in production)
+            // Fechar modal ao clicar fora
+            logoutModal.addEventListener('click', function(e) {
+                if (e.target === logoutModal) {
+                    hideLogoutModal();
+                }
+            });
+
+            // Fechar modal com tecla ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && logoutModal.classList.contains('show')) {
+                    hideLogoutModal();
+                }
+            });
+
+            // Loading overlay
             window.showLoading = function(show) {
                 if (show) {
                     loadingOverlay.classList.add('active');
@@ -1118,6 +1278,19 @@
             setInterval(updateBadges, 30000);
         });
 
+        // Funções do modal de logout
+        function showLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            modal.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
         // Função para mostrar notificações toast
         function showToast(message, type = 'success') {
             const toastContainer = document.getElementById('toastContainer');
@@ -1156,6 +1329,7 @@
         // Expor funções globalmente
         window.showToast = showToast;
         window.confirmAction = confirmAction;
+        window.showLogoutModal = showLogoutModal;
     </script>
 </body>
 </html>

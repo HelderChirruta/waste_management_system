@@ -46,10 +46,10 @@
                 <div class="mb-3">
                     <label for="senha" class="form-label">Nova Senha (deixe em branco para manter a atual)</label>
                     <input type="password" 
-                           class="form-control @error('senha') is-invalid @enderror" 
-                           id="senha" 
-                           name="senha">
-                    @error('senha')
+                           class="form-control @error('password') is-invalid @enderror" 
+                           id="password" 
+                           name="password">
+                    @error('password')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
